@@ -1,0 +1,42 @@
+# Integración continua: en cada push a main y en cada PR pasa las comprobaciones de cada servicio.
+name: CI
+
+# En cada push a main o PR
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Solo permisos de lectura del repo
+permissions:
+  contents: read
+
+# Si llega un push nuevo a la misma rama, cancela la ejecución anterior
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Comprueba que los servicios están bien formateados: ruff format, check y mypy
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false # Si un servicio falla, los demás terminan igualmente y se ve el estado de cada uno
+      matrix:
+        service: [auth] # Un trabajo por servicio. Al crear wallet, se añade aquí
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      # uv instala el Python de .python-version y las dependencias exactas de uv.lock del servicio
+      - run: uv sync --locked
+        working-directory: services/${{ matrix.service }}
+
+      - run: make check s=${{ matrix.service }}
+
+      # make check formatea en vez de fallar: si ha cambiado algo, el código no venía formateado
+      - run: git diff --exit-code
