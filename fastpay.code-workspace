@@ -1,0 +1,19 @@
+// Workspace multi-root de FastPay: ábrelo con File > Open Workspace from File...
+// Cada servicio es una carpeta propia para que VS Code use su .venv (creado por uv sync) y resuelva sus dependencias.
+// Al crear un servicio nuevo, añádelo aquí y copia services/auth/.vscode/settings.json a su carpeta.
+{
+  "folders": [
+    { "name": "fastpay", "path": "." },
+    { "name": "auth", "path": "services/auth" },
+  ],
+  "settings": {
+    // Los servicios ya aparecen como carpetas propias: se ocultan dentro de la raíz para no verlos duplicados
+    "files.exclude": {
+      "services": true,
+      "**/__pycache__": true,
+      "**/.mypy_cache": true,
+      "**/.ruff_cache": true,
+      "**/.pytest_cache": true,
+    },
+  },
+}
