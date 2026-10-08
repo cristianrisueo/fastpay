@@ -1,0 +1,42 @@
+# Entorno local de FastPay.
+services:
+  # Base de datos del servicio auth: usuarios, refresh tokens y outbox. Puerto 5432 en tu máquina
+  db-auth:
+    image: postgres:18
+    container_name: fastpay-db-auth
+    environment:
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: auth
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-auth:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth -d auth_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Base de datos del servicio wallet: cuentas, transferencias, ledger e idempotencia. Puerto 5433 en tu máquina
+  db-wallet:
+    image: postgres:18
+    container_name: fastpay-db-wallet
+    environment:
+      POSTGRES_USER: wallet
+      POSTGRES_PASSWORD: wallet
+      POSTGRES_DB: wallet_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-wallet:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wallet -d wallet_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+# Definición de volúmenes para persistencia de datos
+volumes:
+  pgdata-auth:
+  pgdata-wallet:
