@@ -9,6 +9,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "fastapi[standard]>=0.142.2",
     "pydantic-settings>=2.15.0",
+    "python-json-logger>=4.2.0",
     "sqlalchemy[asyncio]>=2.1.2",
 ]
 

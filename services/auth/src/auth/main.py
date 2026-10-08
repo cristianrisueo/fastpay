@@ -13,6 +13,7 @@ from auth.core.config import get_settings
 from auth.core.database import create_engine, create_session_factory, get_session
 from auth.core.exception_handlers import register_exception_handlers
 from auth.core.exceptions import DatabaseUnavailableError
+from auth.core.logger import configure_logging
 
 
 @asynccontextmanager
@@ -24,6 +25,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
     # Lee la configuración. Si falta una variable obligatoria (DATABASE_URL), la API no arranca
     settings = get_settings()
+
+    # Configura el logger de la aplicación para que los logs sean en formato JSON
+    configure_logging(settings.log_level)
 
     # Un único engine (pool de conexiones) para toda la aplicación.
     # Crearlo no conecta todavía: las conexiones se abren cuando hacen falta
