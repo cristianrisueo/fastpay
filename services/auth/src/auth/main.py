@@ -1,12 +1,18 @@
 # Punto de entrada del servicio auth.
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.core.config import get_settings
-from auth.core.database import create_engine, create_session_factory
+from auth.core.database import create_engine, create_session_factory, get_session
 from auth.core.exception_handlers import register_exception_handlers
+from auth.core.exceptions import DatabaseUnavailableError
 
 
 @asynccontextmanager
@@ -35,5 +41,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 # App global (la que apunta uvicorn con auth.main:app). Se le pasa el lifespan para que se ejecute
 app = FastAPI(title="FastPay Auth Service", lifespan=lifespan)
 
-# Registra los handlers de errores de dominio y valicación en el servicio.
+# Registra los handlers de errores de dominio y validación en el servicio.
 register_exception_handlers(app)
+
+
+@app.get("/health")
+async def health(session: Annotated[AsyncSession, Depends(get_session)]) -> dict[str, str]:
+    """
+    Comprueba que la API está viva y que puede hablar con PostgreSQL: ejecuta un SELECT 1.
+    Un solo endpoint hace de comprobación de vida y de disponibilidad.
+    """
+
+    try:
+        # Si la base de datos no contesta en 2 segundos, se da por caída
+        async with asyncio.timeout(2):
+            await session.execute(text("SELECT 1"))
+
+    # OSError cubre la conexión rechazada (asyncpg no siempre la envuelve) y TimeoutError
+    except (SQLAlchemyError, OSError) as exc:
+        raise DatabaseUnavailableError() from exc
+
+    return {"status": "ok"}

@@ -1,6 +1,6 @@
 # Errores de dominio del servicio auth, sin nada de HTTP.
-# Aquí solo se definen las categorías de errores (una por tipo de problema). Cada dominio crea sus errores
-# concretos heredando de una categoría. Qué código HTTP corresponde a cada categoría lo decide exception_handlers.py.
+# Aquí solo se definen las categorías de errores (una por tipo de problema) y los pocos errores concretos transversales.
+# Qué código HTTP corresponde a cada categoría lo decide exception_handlers.py para cada categoría.
 
 
 class DomainError(Exception):
@@ -38,3 +38,10 @@ class UnprocessableError(DomainError):
 
 class ServiceUnavailableError(DomainError):
     """Categoría 503: una dependencia de la que depende el servicio (la base de datos) no responde."""
+
+
+class DatabaseUnavailableError(ServiceUnavailableError):
+    """La base de datos no responde (o tarda demasiado)."""
+
+    code = "SERVICE_UNAVAILABLE"
+    detail = "Base de datos no disponible"
