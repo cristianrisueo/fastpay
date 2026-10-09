@@ -14,6 +14,7 @@ from auth.core.database import create_engine, create_session_factory, get_sessio
 from auth.core.exception_handlers import register_exception_handlers
 from auth.core.exceptions import DatabaseUnavailableError
 from auth.core.logger import configure_logging
+from auth.users.router import router as users_router
 
 
 @asynccontextmanager
@@ -47,6 +48,9 @@ app = FastAPI(title="FastPay Auth Service", lifespan=lifespan)
 
 # Registra los handlers de errores de dominio y validación en el servicio.
 register_exception_handlers(app)
+
+# Registra las rutas de la API
+app.include_router(users_router)
 
 
 @app.get("/health")

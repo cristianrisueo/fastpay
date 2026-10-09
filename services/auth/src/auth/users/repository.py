@@ -11,9 +11,10 @@ class UserRepository:
     """Consultas de usuarios. Nunca hace commit ni rollback: la transacción vive en la capa de servicio."""
 
     def __init__(self, session: AsyncSession) -> None:
+        """Inicia el repositorio recibiendo la sesión de BD"""
         self._session = session
 
-    async def addUser(self, email: str, password_hash: str) -> UserOut:
+    async def add_user(self, email: str, password_hash: str) -> UserOut:
         """Inserta un usuario. Si el email ya existe, lanza EmailAlreadyRegisteredError."""
 
         # Crea un usuario siguiendo el modelo, y lo apunta como pendiente de guardar en Postgres
