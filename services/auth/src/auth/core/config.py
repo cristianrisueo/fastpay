@@ -1,6 +1,7 @@
 # Configuración del servicio auth.
 # Dos clases: DatabaseSettings (lo único que necesitan Alembic y los tests de base de datos) y Settings (todo lo demás).
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -28,6 +29,16 @@ class Settings(DatabaseSettings):
 
     # Nivel mínimo de los logs: DEBUG, INFO, WARNING, ERROR o CRITICAL
     log_level: str = "INFO"
+
+    # Clave privada con la que se firman los access tokens, y su identificador (kid)
+    # Como hereda de DatabaseSettings donde se especifica que tiene que extraer las variables
+    # del fichero .env estas variables las leerá del entorno, como el DSN de la BD
+    jwt_private_key_path: Path
+    jwt_key_id: str
+
+    # Vida de los tokens: el access token en segundos y el refresh token en días
+    access_token_ttl_seconds: int = 300
+    refresh_token_ttl_days: int = 7
 
 
 @lru_cache

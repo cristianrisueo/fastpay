@@ -1,7 +1,7 @@
 # Servicio de usuarios: la lógica del registro.
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.core.passwords import hash_password
+from auth.core.password_handler import hash_password
 from auth.outbox.repository import OutboxRepository
 from auth.outbox.schemas import USER_REGISTERED
 from auth.users.repository import UserRepository
