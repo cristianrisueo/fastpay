@@ -5,6 +5,9 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import jwt
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from jwt.algorithms import RSAAlgorithm
 
 from auth.core.config import Settings
 
@@ -13,11 +16,20 @@ class TokenSigner:
     """Firma access tokens con la clave privada. Se crea una vez al arrancar la API."""
 
     def __init__(self, settings: Settings) -> None:
-        """Lee la clave privada del fichero y guarda el kid y la vida del token"""
+        """Lee la clave privada del fichero, guarda el kid y la vida del token, y prepara la clave pública"""
 
         self._private_key = settings.jwt_private_key_path.read_bytes()
         self._key_id = settings.jwt_key_id
         self._ttl = timedelta(seconds=settings.access_token_ttl_seconds)
+
+        # Saca la clave pública de la privada; si el fichero no es una clave RSA, la API no arranca
+        private_key = load_pem_private_key(self._private_key, password=None)
+        if not isinstance(private_key, RSAPrivateKey):
+            raise ValueError("La clave de JWT_PRIVATE_KEY_PATH no es una clave RSA")
+
+        # Clave pública en formato JWK, con su kid: es lo que publica el JWKS
+        jwk = RSAAlgorithm.to_jwk(private_key.public_key(), as_dict=True)
+        self.public_jwk = {"kty": "RSA", "kid": self._key_id, "use": "sig", "alg": "RS256", "n": jwk["n"], "e": jwk["e"]}
 
     def sign_access_token(self, user_id: uuid.UUID) -> str:
         """Devuelve un access token para el usuario, válido durante el tiempo configurado."""

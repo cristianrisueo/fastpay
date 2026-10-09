@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -74,3 +74,11 @@ async def health(session: Annotated[AsyncSession, Depends(get_session)]) -> dict
         raise DatabaseUnavailableError() from exc
 
     return {"status": "ok"}
+
+
+@app.get("/.well-known/jwks.json")
+async def jwks(request: Request) -> dict[str, list[dict[str, str]]]:
+    """Publica la clave pública con la que se verifican los access tokens (la usa wallet)."""
+
+    signer: TokenSigner = request.app.state.signer
+    return {"keys": [signer.public_jwk]}
