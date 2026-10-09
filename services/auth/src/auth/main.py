@@ -14,6 +14,7 @@ from auth.core.database import create_engine, create_session_factory, get_sessio
 from auth.core.exception_handlers import register_exception_handlers
 from auth.core.exceptions import DatabaseUnavailableError
 from auth.core.logger import configure_logging
+from auth.core.token_handler import TokenSigner
 from auth.users.router import router as users_router
 
 
@@ -35,6 +36,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     engine = create_engine(settings)
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
+
+    # Carga la clave privada una sola vez: si el fichero no existe, la API no arranca
+    app.state.signer = TokenSigner(settings)
 
     # A partir de aquí la API atiende peticiones
     yield

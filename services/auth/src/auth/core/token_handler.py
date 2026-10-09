@@ -1,4 +1,6 @@
 # Firma de los access tokens: JWT con RS256 y el kid de la clave en la cabecera.
+import hashlib
+import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -26,3 +28,14 @@ class TokenSigner:
 
         # Firma con RS256 y pone el kid de la clave en la cabecera
         return jwt.encode(claims, self._private_key, algorithm="RS256", headers={"kid": self._key_id})
+
+
+def new_refresh_token() -> tuple[str, str]:
+    """Genera un refresh token aleatorio y devuelve el token y su SHA-256 (lo único que se guarda)."""
+    token = secrets.token_urlsafe(32)
+    return token, hash_refresh_token(token)
+
+
+def hash_refresh_token(token: str) -> str:
+    """SHA-256 del refresh token en hexadecimal. El refresh y el logout lo usarán para buscarlo."""
+    return hashlib.sha256(token.encode()).hexdigest()

@@ -21,3 +21,22 @@ class UserOut(BaseModel):
 
     id: uuid.UUID
     email: str
+
+class LoginIn(BaseModel):
+    """Cuerpo de POST /v1/login."""
+
+    # Un campo no definido aquí es un error 422, en lugar de ignorarse
+    model_config = ConfigDict(extra="forbid")
+
+    # Email en minúsculas para buscarlo igual que se guardó; la contraseña nunca sale en logs
+    email: Annotated[EmailStr, AfterValidator(str.lower)]
+    password: str = Field(repr=False)
+
+
+class TokenPairOut(BaseModel):
+    """Respuesta del login: el access token, el refresh token y cuánto dura el access token."""
+
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int

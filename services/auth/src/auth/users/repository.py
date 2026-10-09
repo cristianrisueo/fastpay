@@ -1,4 +1,5 @@
 # Repositorio de usuarios: las consultas a la tabla users.
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,3 +33,7 @@ class UserRepository:
 
         # Devuelve el usuario en el esquema de la API (sin hash de password)
         return UserOut(id=model.id, email=model.email)
+
+    async def get_user_by_email(self, email: str) -> UserModel | None:
+        """Busca un usuario por su email. Devuelve None si no existe."""
+        return await self._session.scalar(select(UserModel).where(UserModel.email == email))
