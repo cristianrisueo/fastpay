@@ -15,6 +15,7 @@ from auth.core.database import Base
 #   from auth.users.models import UserModel  # noqa: F401  (registra la tabla en Base.metadata)
 # Importarlo es lo que registra la tabla en Base.metadata. Si falta, Alembic cree que la tabla no existe
 from auth.outbox.models import OutboxEventModel  # noqa: F401  (registra la tabla en Base.metadata)
+from auth.tokens.models import RefreshTokenModel  # noqa: F401  (registra la tabla en Base.metadata)
 from auth.users.models import UserModel  # noqa: F401  (registra la tabla en Base.metadata)
 
 # Configuración leída de alembic.ini
