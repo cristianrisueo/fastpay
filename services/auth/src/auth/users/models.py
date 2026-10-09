@@ -19,7 +19,7 @@ class UserModel(Base):
     # UUID v7 generado por la aplicación. Es el sub del JWT y el user_id de los eventos
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid7)
 
-    # Email del usuario. unique=True crea la restricción uq_users_email (el nombre sale de la convención),
+    # Email del usuario. unique=True crea la restricción uq_users_email (el nombre sale de la convención)
     email: Mapped[str] = mapped_column(String(254), unique=True)
 
     # Hash de la contraseña (nunca la contraseña). Incluye la sal y los parámetros
