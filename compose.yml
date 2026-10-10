@@ -18,7 +18,7 @@ services:
       timeout: 3s
       retries: 5
 
-  # Base de datos del servicio wallet: cuentas, transferencias, ledger e idempotencia. Puerto 5433 en tu máquina
+  # Base de datos del servicio wallet: cuentas, transferencias e idempotencia. Puerto 5433 en tu máquina
   db-wallet:
     image: postgres:18
     container_name: fastpay-db-wallet
@@ -67,6 +67,48 @@ services:
         condition: service_healthy
       migrate-auth:
         condition: service_completed_successfully
+    # Sano cuando /health responde 200. La imagen slim no trae curl, así que se usa Python
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Aplica las migraciones de wallet y termina. Solo con el perfil app
+  migrate-wallet:
+    profiles: [app]
+    build: services/wallet
+    image: fastpay-wallet
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wallet:wallet@db-wallet:5432/wallet_db
+    depends_on:
+      db-wallet:
+        condition: service_healthy
+
+  # API de wallet en el puerto 8002. Arranca con su base de datos sana, sus migraciones hechas y auth sano (descarga su JWKS)
+  wallet:
+    profiles: [app]
+    build: services/wallet
+    image: fastpay-wallet
+    ports:
+      - "8002:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://wallet:wallet@db-wallet:5432/wallet_db
+      AUTH_JWKS_URL: http://auth:8000/.well-known/jwks.json
+    depends_on:
+      db-wallet:
+        condition: service_healthy
+      migrate-wallet:
+        condition: service_completed_successfully
+      auth:
+        condition: service_healthy
     # Sano cuando /health responde 200. La imagen slim no trae curl, así que se usa Python
     healthcheck:
       test:
