@@ -5,6 +5,7 @@
   "folders": [
     { "name": "fastpay", "path": "." },
     { "name": "auth", "path": "services/auth" },
+    { "name": "wallet", "path": "services/wallet" },
   ],
   "settings": {
     // Los servicios ya aparecen como carpetas propias: se ocultan dentro de la raíz para no verlos duplicados
