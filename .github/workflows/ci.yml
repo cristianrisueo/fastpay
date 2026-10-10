@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false # Si un servicio falla, los demás terminan igualmente y se ve el estado de cada uno
       matrix:
-        service: [auth] # Un trabajo por servicio. Al crear wallet, se añade aquí
+        service: [auth, wallet] # Un trabajo por servicio
     steps:
       - uses: actions/checkout@v7
 
