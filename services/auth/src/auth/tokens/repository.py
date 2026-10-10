@@ -2,7 +2,7 @@
 import uuid
 from datetime import timedelta
 
-from sqlalchemy import func, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.tokens.models import RefreshTokenModel
@@ -38,3 +38,15 @@ class RefreshTokenRepository:
             .returning(RefreshTokenModel)
         )
         return await self._session.scalar(stmt)
+
+    async def revoke_family(self, token_hash: str) -> None:
+        """Revoca todos los tokens de la familia del token indicado. Si el token no existe, no hace nada."""
+
+        # Busca la familia del token y revoca todos sus tokens que aún no estuvieran revocados
+        family_id = select(RefreshTokenModel.family_id).where(RefreshTokenModel.token_hash == token_hash).scalar_subquery()
+        stmt = (
+            update(RefreshTokenModel)
+            .where(RefreshTokenModel.family_id == family_id, RefreshTokenModel.revoked_at.is_(None))
+            .values(revoked_at=func.now())
+        )
+        await self._session.execute(stmt)

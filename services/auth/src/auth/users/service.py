@@ -12,7 +12,7 @@ from auth.outbox.schemas import USER_REGISTERED
 from auth.tokens.repository import RefreshTokenRepository
 from auth.users.exceptions import InvalidCredentialsError, InvalidRefreshTokenError
 from auth.users.repository import UserRepository
-from auth.users.schemas import LoginIn, LoginOut, RefreshIn, RegisterIn, RegisterOut
+from auth.users.schemas import LoginIn, LoginOut, LogoutIn, RefreshIn, RegisterIn, RegisterOut
 
 
 class UserService:
@@ -63,6 +63,13 @@ class UserService:
                 raise InvalidRefreshTokenError()
 
             return await self._issue_tokens(token.user_id, token.family_id)
+
+    async def logout(self, data: LogoutIn) -> None:
+        """Cierra la sesión: revoca la familia del refresh token. Si el token no existe, no pasa nada."""
+
+        # Revoca la sesión entera a la que pertenece el token
+        async with self._session.begin():
+            await self._tokens.revoke_family(hash_refresh_token(data.refresh_token))
 
     async def _issue_tokens(self, user_id: uuid.UUID, family_id: uuid.UUID) -> LoginOut:
         """Guarda un refresh token nuevo y firma el access token. Lo usarán el login y el refresh."""

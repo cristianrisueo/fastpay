@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.core.config import Settings, get_settings
 from auth.core.database import get_session
-from auth.users.schemas import LoginIn, LoginOut, RefreshIn, RegisterIn, RegisterOut
+from auth.users.schemas import LoginIn, LoginOut, LogoutIn, RefreshIn, RegisterIn, RegisterOut
 from auth.users.service import UserService
 
 # Crea el router
@@ -38,3 +38,9 @@ async def login(data: LoginIn, service: Annotated[UserService, Depends(get_user_
 async def refresh(data: RefreshIn, service: Annotated[UserService, Depends(get_user_service)]) -> LoginOut:
     """Renueva la sesión: cambia un refresh token por un par nuevo."""
     return await service.refresh(data)
+
+
+@router.post("/logout", status_code=204)
+async def logout(data: LogoutIn, service: Annotated[UserService, Depends(get_user_service)]) -> None:
+    """Cierra la sesión del refresh token. Responde siempre 204, aunque el token no exista."""
+    await service.logout(data)

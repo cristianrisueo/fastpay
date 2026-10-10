@@ -48,4 +48,10 @@ class RefreshIn(BaseModel):
 
     # Un campo no definido aquí es un error 422; el token nunca sale en logs
     model_config = ConfigDict(extra="forbid")
+
+    # Refresh token, nunca sale en los logs
     refresh_token: str = Field(repr=False)
+
+
+# El logout recibe lo mismo que el refresh: el refresh token
+LogoutIn = RefreshIn
