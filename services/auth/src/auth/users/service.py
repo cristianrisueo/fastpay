@@ -87,7 +87,7 @@ class UserService:
             if user is not None:
                 await self._outbox.add_event(USER_EMAIL_CHANGED, {"user_id": str(user.id), "email": user.email})
 
-            # Si no hubo cambio se responde con un error
+            # Si no hubo cambio, el email ya era ese y se responde igual; si el usuario no existe, 401
             else:
                 user = await self._users.get_user_by_id(user_id)
                 if user is None:
