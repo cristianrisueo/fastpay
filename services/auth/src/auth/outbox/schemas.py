@@ -4,3 +4,4 @@
 # En este caso lo exterior de la API es la publicación en Kafka del evento.
 
 USER_REGISTERED = "user.registered"
+USER_EMAIL_CHANGED = "user.email_changed"

@@ -45,3 +45,10 @@ class DatabaseUnavailableError(ServiceUnavailableError):
 
     code = "SERVICE_UNAVAILABLE"
     detail = "Base de datos no disponible"
+
+
+class InvalidAccessTokenError(UnauthenticatedError):
+    """Falta el access token, la firma no es válida o ha caducado."""
+
+    code = "UNAUTHENTICATED"
+    detail = "Falta el token o no es válido"

@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from jwt.algorithms import RSAAlgorithm
 
 from auth.core.config import Settings
+from auth.core.exceptions import InvalidAccessTokenError
 
 
 class TokenSigner:
@@ -31,6 +32,9 @@ class TokenSigner:
         jwk = RSAAlgorithm.to_jwk(private_key.public_key(), as_dict=True)
         self.public_jwk = {"kty": "RSA", "kid": self._key_id, "use": "sig", "alg": "RS256", "n": jwk["n"], "e": jwk["e"]}
 
+        # Clave pública: es la que verifica las firmas de los access tokens
+        self._public_key = private_key.public_key()
+
     def sign_access_token(self, user_id: uuid.UUID) -> str:
         """Devuelve un access token para el usuario, válido durante el tiempo configurado."""
 
@@ -40,6 +44,16 @@ class TokenSigner:
 
         # Firma con RS256 y pone el kid de la clave en la cabecera
         return jwt.encode(claims, self._private_key, algorithm="RS256", headers={"kid": self._key_id})
+
+    def verify_access_token(self, token: str) -> uuid.UUID:
+        """Comprueba la firma y la caducidad del access token y devuelve el id del usuario."""
+
+        # Solo acepta RS256 y exige los tres claims; cualquier fallo es el mismo 401
+        try:
+            claims = jwt.decode(token, self._public_key, algorithms=["RS256"], options={"require": ["exp", "iat", "sub"]})
+            return uuid.UUID(claims["sub"])
+        except (jwt.InvalidTokenError, ValueError) as exc:
+            raise InvalidAccessTokenError() from exc
 
 
 def new_refresh_token() -> tuple[str, str]:

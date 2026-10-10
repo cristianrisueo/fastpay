@@ -5,14 +5,15 @@ from datetime import timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.core.config import Settings
+from auth.core.exceptions import InvalidAccessTokenError
 from auth.core.password_handler import hash_password, verify_password
 from auth.core.token_handler import TokenSigner, hash_refresh_token, new_refresh_token
 from auth.outbox.repository import OutboxRepository
-from auth.outbox.schemas import USER_REGISTERED
+from auth.outbox.schemas import USER_EMAIL_CHANGED, USER_REGISTERED
 from auth.tokens.repository import RefreshTokenRepository
 from auth.users.exceptions import InvalidCredentialsError, InvalidRefreshTokenError
 from auth.users.repository import UserRepository
-from auth.users.schemas import LoginIn, LoginOut, LogoutIn, RefreshIn, RegisterIn, RegisterOut
+from auth.users.schemas import ChangeEmailIn, ChangeEmailOut, LoginIn, LoginOut, LogoutIn, RefreshIn, RegisterIn, RegisterOut
 
 
 class UserService:
@@ -70,6 +71,24 @@ class UserService:
         # Revoca la sesión entera a la que pertenece el token
         async with self._session.begin():
             await self._tokens.revoke_family(hash_refresh_token(data.refresh_token))
+
+    async def change_email(self, user_id: uuid.UUID, data: ChangeEmailIn) -> ChangeEmailOut:
+        """Cambia el email del usuario y apunta el evento. Si el email ya era ese, no hace nada."""
+
+        async with self._session.begin():
+            # Cambia el email del usuario y si odo está correcto inserta el evento de email cambiado en outbox
+            user = await self._users.update_email(user_id, data.email)
+            if user is not None:
+                await self._outbox.add_event(USER_EMAIL_CHANGED, {"user_id": str(user.id), "email": user.email})
+
+            # Si no hubo cambio se responde con un error
+            else:
+                user = await self._users.get_user_by_id(user_id)
+                if user is None:
+                    raise InvalidAccessTokenError()
+
+            # Si se ha actualizado todo correctamente devuelve el usuario actualizado
+            return ChangeEmailOut(id=user.id, email=user.email)
 
     async def _issue_tokens(self, user_id: uuid.UUID, family_id: uuid.UUID) -> LoginOut:
         """Guarda un refresh token nuevo y firma el access token. Lo usarán el login y el refresh."""

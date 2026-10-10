@@ -1,5 +1,7 @@
 # Repositorio de usuarios: las consultas a la tabla users.
-from sqlalchemy import select
+import uuid
+
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,3 +39,26 @@ class UserRepository:
     async def get_user_by_email(self, email: str) -> UserModel | None:
         """Busca un usuario por su email. Devuelve None si no existe."""
         return await self._session.scalar(select(UserModel).where(UserModel.email == email))
+
+    async def get_user_by_id(self, user_id: uuid.UUID) -> UserModel | None:
+        """Busca un usuario por su id. Devuelve None si no existe."""
+        return await self._session.get(UserModel, user_id)
+
+    async def update_email(self, user_id: uuid.UUID, email: str) -> UserModel | None:
+        """Cambia el email si es distinto del actual y devuelve el usuario. None si no cambió nada."""
+
+        # UPDATE condicional: solo cambia si el email nuevo es distinto; si ya lo tiene otro usuario, 409
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == user_id, UserModel.email != email)
+            .values(email=email)
+            .returning(UserModel)
+        )
+
+        try:
+            return await self._session.scalar(stmt)
+        except IntegrityError as exc:
+            if "uq_users_email" in str(exc.orig):
+                raise EmailAlreadyRegisteredError() from exc
+
+            raise

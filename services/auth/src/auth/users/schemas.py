@@ -55,3 +55,17 @@ class RefreshIn(BaseModel):
 
 # El logout recibe lo mismo que el refresh: el refresh token
 LogoutIn = RefreshIn
+
+
+class ChangeEmailIn(BaseModel):
+    """Cuerpo de PATCH /v1/me/email."""
+
+    # Un campo no definido aquí es un error 422, en lugar de ignorarse
+    model_config = ConfigDict(extra="forbid")
+
+    # Email nuevo, con formato correcto y en minúsculas
+    email: Annotated[EmailStr, AfterValidator(str.lower)]
+
+
+# El cambio de email devuelve lo mismo que el registro: el id y el email
+ChangeEmailOut = RegisterOut
