@@ -7,10 +7,9 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from wallet.accounts.models import AccountModel  # noqa: F401  (importar cada modelo registra su tabla en Base.metadata)
 from wallet.core.config import DatabaseSettings
 from wallet.core.database import Base
-
-# Importa el modelo de cada tabla: es lo que la registra en Base.metadata (si falta, Alembic cree que no existe)
 
 # Configuración leída de alembic.ini
 config = context.config
