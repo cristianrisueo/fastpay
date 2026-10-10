@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.core.config import Settings, get_settings
 from auth.core.database import get_session
-from auth.users.schemas import LoginIn, RegisterIn, TokenPairOut, UserOut
+from auth.users.schemas import LoginIn, LoginOut, RefreshIn, RegisterIn, RegisterOut
 from auth.users.service import UserService
 
 # Crea el router
@@ -23,12 +23,18 @@ def get_user_service(
 
 
 @router.post("/register", status_code=201)
-async def register(data: RegisterIn, service: Annotated[UserService, Depends(get_user_service)]) -> UserOut:
+async def register(data: RegisterIn, service: Annotated[UserService, Depends(get_user_service)]) -> RegisterOut:
     """Registra un usuario nuevo."""
     return await service.register(data)
 
 
 @router.post("/login")
-async def login(data: LoginIn, service: Annotated[UserService, Depends(get_user_service)]) -> TokenPairOut:
+async def login(data: LoginIn, service: Annotated[UserService, Depends(get_user_service)]) -> LoginOut:
     """Inicia sesión con email y contraseña."""
     return await service.login(data)
+
+
+@router.post("/refresh")
+async def refresh(data: RefreshIn, service: Annotated[UserService, Depends(get_user_service)]) -> LoginOut:
+    """Renueva la sesión: cambia un refresh token por un par nuevo."""
+    return await service.refresh(data)

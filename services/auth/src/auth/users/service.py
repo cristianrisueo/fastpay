@@ -6,13 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.core.config import Settings
 from auth.core.password_handler import hash_password, verify_password
-from auth.core.token_handler import TokenSigner, new_refresh_token
+from auth.core.token_handler import TokenSigner, hash_refresh_token, new_refresh_token
 from auth.outbox.repository import OutboxRepository
 from auth.outbox.schemas import USER_REGISTERED
 from auth.tokens.repository import RefreshTokenRepository
-from auth.users.exceptions import InvalidCredentialsError
+from auth.users.exceptions import InvalidCredentialsError, InvalidRefreshTokenError
 from auth.users.repository import UserRepository
-from auth.users.schemas import LoginIn, RegisterIn, TokenPairOut, UserOut
+from auth.users.schemas import LoginIn, LoginOut, RefreshIn, RegisterIn, RegisterOut
 
 
 class UserService:
@@ -28,7 +28,7 @@ class UserService:
         self._access_ttl = settings.access_token_ttl_seconds
         self._refresh_ttl = timedelta(days=settings.refresh_token_ttl_days)
 
-    async def register(self, data: RegisterIn) -> UserOut:
+    async def register(self, data: RegisterIn) -> RegisterOut:
         """Registra un usuario y devuelve sus datos públicos."""
 
         # Calcula el hash de la contraseña
@@ -41,7 +41,7 @@ class UserService:
 
         return user
 
-    async def login(self, data: LoginIn) -> TokenPairOut:
+    async def login(self, data: LoginIn) -> LoginOut:
         """Comprueba las credenciales y devuelve un access token y un refresh token nuevos."""
 
         async with self._session.begin():
@@ -53,7 +53,18 @@ class UserService:
             # Emite el par de tokens en una familia nueva (un login = una familia)
             return await self._issue_tokens(user.id, uuid.uuid7())
 
-    async def _issue_tokens(self, user_id: uuid.UUID, family_id: uuid.UUID) -> TokenPairOut:
+    async def refresh(self, data: RefreshIn) -> LoginOut:
+        """Usa el refresh token y obtiene un par nuevo. El token usado deja de valer (rotación)."""
+
+        # Con una Tx actualiza el refresh token para dejarlo usado y emite un nuevo par de la misma familia
+        async with self._session.begin():
+            token = await self._tokens.use_refresh_token(hash_refresh_token(data.refresh_token))
+            if token is None:
+                raise InvalidRefreshTokenError()
+
+            return await self._issue_tokens(token.user_id, token.family_id)
+
+    async def _issue_tokens(self, user_id: uuid.UUID, family_id: uuid.UUID) -> LoginOut:
         """Guarda un refresh token nuevo y firma el access token. Lo usarán el login y el refresh."""
 
         # Crea el refresh token y guarda solo su hash en la familia indicada
@@ -62,4 +73,4 @@ class UserService:
 
         # Firma el access token y devuelve el par
         access_token = self._signer.sign_access_token(user_id)
-        return TokenPairOut(access_token=access_token, refresh_token=refresh_token, expires_in=self._access_ttl)
+        return LoginOut(access_token=access_token, refresh_token=refresh_token, expires_in=self._access_ttl)

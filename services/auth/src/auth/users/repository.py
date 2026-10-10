@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.users.exceptions import EmailAlreadyRegisteredError
 from auth.users.models import UserModel
-from auth.users.schemas import UserOut
+from auth.users.schemas import RegisterOut
 
 
 class UserRepository:
@@ -15,7 +15,7 @@ class UserRepository:
         """Inicia el repositorio recibiendo la sesión de BD"""
         self._session = session
 
-    async def add_user(self, email: str, password_hash: str) -> UserOut:
+    async def add_user(self, email: str, password_hash: str) -> RegisterOut:
         """Inserta un usuario. Si el email ya existe, lanza EmailAlreadyRegisteredError."""
 
         # Crea un usuario siguiendo el modelo, y lo apunta como pendiente de guardar en Postgres
@@ -32,7 +32,7 @@ class UserRepository:
             raise
 
         # Devuelve el usuario en el esquema de la API (sin hash de password)
-        return UserOut(id=model.id, email=model.email)
+        return RegisterOut(id=model.id, email=model.email)
 
     async def get_user_by_email(self, email: str) -> UserModel | None:
         """Busca un usuario por su email. Devuelve None si no existe."""

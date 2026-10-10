@@ -16,11 +16,12 @@ class RegisterIn(BaseModel):
     password: str = Field(min_length=8, max_length=128, repr=False)
 
 
-class UserOut(BaseModel):
-    """Respuesta de registro: el usuario creado. Nunca incluye la contraseña ni su hash."""
+class RegisterOut(BaseModel):
+    """Respuesta de /v1/register: el usuario creado. Nunca incluye la contraseña ni su hash."""
 
     id: uuid.UUID
     email: str
+
 
 class LoginIn(BaseModel):
     """Cuerpo de POST /v1/login."""
@@ -33,10 +34,18 @@ class LoginIn(BaseModel):
     password: str = Field(repr=False)
 
 
-class TokenPairOut(BaseModel):
-    """Respuesta del login: el access token, el refresh token y cuánto dura el access token."""
+class LoginOut(BaseModel):
+    """Respuesta de POST /v1/login: el access token, el refresh token y cuánto dura el access token."""
 
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int
+
+
+class RefreshIn(BaseModel):
+    """Cuerpo de POST /v1/refresh."""
+
+    # Un campo no definido aquí es un error 422; el token nunca sale en logs
+    model_config = ConfigDict(extra="forbid")
+    refresh_token: str = Field(repr=False)
