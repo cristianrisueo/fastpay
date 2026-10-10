@@ -40,3 +40,6 @@ jobs:
 
       # make check formatea en vez de fallar: si ha cambiado algo, el código no venía formateado
       - run: git diff --exit-code
+
+      # Unitarios + integración: testcontainers levanta PostgreSQL con el Docker del runner
+      - run: make test s=${{ matrix.service }}
