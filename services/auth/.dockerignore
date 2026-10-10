@@ -1,0 +1,11 @@
+# Lo que nunca entra en la imagen: entorno local, secretos y cachés
+.venv/
+.env
+keys/
+*.pem
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.vscode/
+tests/

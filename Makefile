@@ -1,5 +1,5 @@
 # Comandos del proyecto FastPay. Help los lista con su descripción.
-.PHONY: help up stop down destroy psql migrate migration rollback run check test test-unit test-integration coverage
+.PHONY: help up app stop down destroy psql migrate migration rollback run check test test-unit test-integration coverage
 
 # Puerto local de cada API (los mismos que en el contrato HTTP)
 PORT_auth = 8001
@@ -19,19 +19,22 @@ EACH = for svc in $(TARGETS); do echo "==> $$svc"; (cd services/$$svc && $(CMD))
 help:  ## Muestra esta ayuda
 	@grep -E '^[a-zA-Z0-9_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-18s %s\n", $$1, $$2}'
 
-# --- Bases de datos (Docker): afectan a las dos ---
+# --- Contenedores (Docker): las bases de datos siempre; los servicios, con el perfil app ---
 
 up:  ## Levanta las dos bases de datos y espera a que estén sanas
 	docker compose up -d --wait
 
+app:  ## Levanta las bases de datos, migra y arranca los servicios en contenedores
+	docker compose --profile app up -d --build --wait
+
 stop:  ## Apaga los contenedores sin borrarlos
-	docker compose stop
+	docker compose --profile app stop
 
 down:  ## Elimina los contenedores (los datos se conservan en los volúmenes)
-	docker compose down
+	docker compose --profile app down
 
 destroy:  ## Elimina los contenedores Y LOS DATOS
-	docker compose down -v
+	docker compose --profile app down -v
 
 psql:  ## Consola SQL de la base de datos de un servicio. Uso: make psql s=auth
 	$(need-s)
@@ -59,13 +62,13 @@ run:  ## Arranca la API con recarga automática. Uso: make run s=auth (auth en 8
 	cd services/$(s) && uv run uvicorn $(s).main:app --reload --port $(PORT_$(s))
 
 check: CMD = uv run ruff format . && uv run ruff check . && uv run mypy src tests
-check:  ## Formatea, pasa el linter y los tipos. Sin s=, en todos los servicios
+check:  ## Formatea, pasa el linter y los tipos. Sin s=, en los servicios
 	@$(EACH)
 
 # --- Tests ---
 
 test: CMD = uv run pytest
-test:  ## Unitarios + integración (necesita Docker). Sin s=, en todos los servicios
+test:  ## Unitarios + integración (necesita Docker). Sin s=, en los servicios
 	@$(EACH)
 
 test-unit: CMD = uv run pytest tests/unit

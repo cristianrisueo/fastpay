@@ -36,6 +36,50 @@ services:
       timeout: 3s
       retries: 5
 
+  # Aplica las migraciones de auth y termina. Solo con el perfil app
+  migrate-auth:
+    profiles: [app]
+    build: services/auth
+    image: fastpay-auth
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://auth:auth@db-auth:5432/auth_db
+    depends_on:
+      db-auth:
+        condition: service_healthy
+
+  # API de auth en el puerto 8001. Arranca cuando la base de datos está sana y las migraciones han terminado
+  auth:
+    profiles: [app]
+    build: services/auth
+    image: fastpay-auth
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://auth:auth@db-auth:5432/auth_db
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt-dev.pem
+      JWT_KEY_ID: dev-1
+    # La clave privada se monta como fichero de solo lectura: nunca entra en la imagen
+    volumes:
+      - ./services/auth/keys/jwt-dev.pem:/run/secrets/jwt-dev.pem:ro
+    depends_on:
+      db-auth:
+        condition: service_healthy
+      migrate-auth:
+        condition: service_completed_successfully
+    # Sano cuando /health responde 200. La imagen slim no trae curl, así que se usa Python
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 # Definición de volúmenes para persistencia de datos
 volumes:
   pgdata-auth:
