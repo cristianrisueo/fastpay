@@ -1,4 +1,4 @@
-# Firma de los access tokens: JWT con RS256 y el kid de la clave en la cabecera.
+# Tokens: firma y verificación del access token (JWT RS256 con kid) y creación y hash del refresh token.
 import hashlib
 import secrets
 import uuid
@@ -63,5 +63,5 @@ def new_refresh_token() -> tuple[str, str]:
 
 
 def hash_refresh_token(token: str) -> str:
-    """SHA-256 del refresh token en hexadecimal. El refresh y el logout lo usarán para buscarlo."""
+    """SHA-256 del refresh token en hexadecimal. El refresh y el logout lo usan para buscarlo."""
     return hashlib.sha256(token.encode()).hexdigest()

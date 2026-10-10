@@ -77,7 +77,7 @@ async def clean_database(engine: AsyncEngine) -> AsyncIterator[None]:
         )
         tables = [f'"{row[0]}"' for row in result]
 
-        # Con cero tablas (ahora mismo no hay ninguna) TRUNCATE sin nombres daría error
+        # Sin tablas, TRUNCATE sin nombres daría error
         if tables:
             await connection.execute(text(f"TRUNCATE {', '.join(tables)} RESTART IDENTITY CASCADE"))
 

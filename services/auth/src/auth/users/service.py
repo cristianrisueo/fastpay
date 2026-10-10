@@ -1,4 +1,4 @@
-# Servicio de usuarios: las acciones del usuario (registro e inicio de sesión).
+# Servicio de usuarios: todas las acciones del usuario (registro, login, refresh, logout y cambio de email).
 import uuid
 from datetime import timedelta
 
@@ -68,7 +68,7 @@ class UserService:
             # No se pudo canjear: si el token ya estaba usado, alguien lo está reutilizando y se revoca su familia
             await self._tokens.revoke_family_if_reused(token_hash)
 
-        # El error se lanza fuera de la transacción: dentro, deshaceria también la revocación
+        # El error se lanza fuera de la transacción: dentro, desharía también la revocación
         raise InvalidRefreshTokenError()
 
     async def logout(self, data: LogoutIn) -> None:
@@ -82,7 +82,7 @@ class UserService:
         """Cambia el email del usuario y apunta el evento. Si el email ya era ese, no hace nada."""
 
         async with self._session.begin():
-            # Cambia el email del usuario y si odo está correcto inserta el evento de email cambiado en outbox
+            # Cambia el email del usuario y si todo está correcto inserta el evento de email cambiado en outbox
             user = await self._users.update_email(user_id, data.email)
             if user is not None:
                 await self._outbox.add_event(USER_EMAIL_CHANGED, {"user_id": str(user.id), "email": user.email})
@@ -93,11 +93,11 @@ class UserService:
                 if user is None:
                     raise InvalidAccessTokenError()
 
-            # Si se ha actualizado todo correctamente devuelve el usuario actualizado
+            # Devuelve el usuario con su email actual, haya cambiado o no
             return ChangeEmailOut(id=user.id, email=user.email)
 
     async def _issue_tokens(self, user_id: uuid.UUID, family_id: uuid.UUID) -> LoginOut:
-        """Guarda un refresh token nuevo y firma el access token. Lo usarán el login y el refresh."""
+        """Guarda un refresh token nuevo y firma el access token. Lo usan el login y el refresh."""
 
         # Crea el refresh token y guarda solo su hash en la familia indicada
         refresh_token, token_hash = new_refresh_token()
