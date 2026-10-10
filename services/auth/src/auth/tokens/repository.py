@@ -50,3 +50,19 @@ class RefreshTokenRepository:
             .values(revoked_at=func.now())
         )
         await self._session.execute(stmt)
+
+    async def revoke_family_if_reused(self, token_hash: str) -> None:
+        """Si el token ya estaba usado (reutilización, posible robo), revoca toda su familia. Si no, no hace nada."""
+
+        # Busca la familia del token solo si ya estaba usado, y revoca todos sus tokens que sigan sin revocar
+        family_id = (
+            select(RefreshTokenModel.family_id)
+            .where(RefreshTokenModel.token_hash == token_hash, RefreshTokenModel.used_at.is_not(None))
+            .scalar_subquery()
+        )
+        stmt = (
+            update(RefreshTokenModel)
+            .where(RefreshTokenModel.family_id == family_id, RefreshTokenModel.revoked_at.is_(None))
+            .values(revoked_at=func.now())
+        )
+        await self._session.execute(stmt)

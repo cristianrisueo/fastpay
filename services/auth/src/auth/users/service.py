@@ -55,15 +55,21 @@ class UserService:
             return await self._issue_tokens(user.id, uuid.uuid7())
 
     async def refresh(self, data: RefreshIn) -> LoginOut:
-        """Usa el refresh token y obtiene un par nuevo. El token usado deja de valer (rotación)."""
+        """Cambia un refresh token por un par nuevo. Si el token ya estaba usado, revoca su familia (posible robo)."""
 
-        # Con una Tx actualiza el refresh token para dejarlo usado y emite un nuevo par de la misma familia
+        token_hash = hash_refresh_token(data.refresh_token)
+
         async with self._session.begin():
-            token = await self._tokens.use_refresh_token(hash_refresh_token(data.refresh_token))
-            if token is None:
-                raise InvalidRefreshTokenError()
+            # Canjea el token; si funciona, emite el par nuevo en la misma familia
+            token = await self._tokens.use_refresh_token(token_hash)
+            if token is not None:
+                return await self._issue_tokens(token.user_id, token.family_id)
 
-            return await self._issue_tokens(token.user_id, token.family_id)
+            # No se pudo canjear: si el token ya estaba usado, alguien lo está reutilizando y se revoca su familia
+            await self._tokens.revoke_family_if_reused(token_hash)
+
+        # El error se lanza fuera de la transacción: dentro, deshaceria también la revocación
+        raise InvalidRefreshTokenError()
 
     async def logout(self, data: LogoutIn) -> None:
         """Cierra la sesión: revoca la familia del refresh token. Si el token no existe, no pasa nada."""
